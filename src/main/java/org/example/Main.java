@@ -3,18 +3,20 @@ package org.example;
 import crypto.CryptoService;
 import generator.PasswordGenerator;
 
+import javax.crypto.SecretKey;
+
 public class Main {
     static void main() {
 
         CryptoService crypto = new CryptoService();
-        byte[] salt = crypto.generateSalt();
+        SecretKey key = crypto.deriveKey("hello".toCharArray(), crypto.generateSalt());
+        byte[] data = "same text".getBytes(java.nio.charset.StandardCharsets.UTF_8);
 
-        byte[] a = crypto.deriveKey("hello".toCharArray(), salt).getEncoded();
-        byte[] b = crypto.deriveKey("hello".toCharArray(), salt).getEncoded();
-        byte[] c = crypto.deriveKey("hellp".toCharArray(), salt).getEncoded();
+        byte[] a = crypto.encrypt(key, data);
+        byte[] b = crypto.encrypt(key, data);
 
-        System.out.println(java.util.HexFormat.of().formatHex(a));
-        System.out.println(java.util.HexFormat.of().formatHex(b));
-        System.out.println(java.util.HexFormat.of().formatHex(c));
+        java.util.HexFormat hex = java.util.HexFormat.of();
+        System.out.println(hex.formatHex(a));
+        System.out.println(hex.formatHex(b));
     }
 }

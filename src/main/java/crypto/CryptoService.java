@@ -4,15 +4,21 @@ import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.AEADBadTagException;
+import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
 public class CryptoService {
     // how many bytes, iterations and lenght SHA256
-    private static final int SALT_LENGTH = 16;        // bytes
+    public static final int SALT_LENGTH = 16;        // bytes
     private static final int ITERATIONS = 600_000;
     private static final int KEY_LENGTH_BITS = 256;   // AES-256
+    private static final String CIPHER_TRANSFORMATION = "AES/GCM/NoPadding";
+    private static final int IV_LENGTH = 12;          // bytes
+    private static final int TAG_LENGTH_BITS = 128;   // 16 bytes
 
     // class that provides a cryptographically strong random number generator
     private final SecureRandom random = new SecureRandom();
@@ -55,4 +61,41 @@ public class CryptoService {
             spec.clearPassword();
         }
     }
+
+    public byte[] encrypt(SecretKey key, byte[] plaintext) {
+        try {
+            byte[] iv = new byte[IV_LENGTH];
+            random.nextBytes(iv);                         // a new IV for every encryption
+
+            Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
+            cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(TAG_LENGTH_BITS, iv));
+            byte[] ciphertext = cipher.doFinal(plaintext);   // ciphertext + tag
+
+            byte[] result = new byte[IV_LENGTH + ciphertext.length];
+            System.arraycopy(iv, 0, result, 0, IV_LENGTH);
+            System.arraycopy(ciphertext, 0, result, IV_LENGTH, ciphertext.length);
+            return result;                                   // [IV][ciphertext][tag]
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("Encryption failed", e);
+        }
+    }
+
+    public byte[] decrypt(SecretKey key, byte[] data) {
+        if (data.length < IV_LENGTH + TAG_LENGTH_BITS / 8) {
+            throw new DecryptionException("Encrypted data is too short.", null);
+        }
+        try {
+            Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
+            cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(TAG_LENGTH_BITS, data, 0, IV_LENGTH));
+            return cipher.doFinal(data, IV_LENGTH, data.length - IV_LENGTH);
+        } catch (AEADBadTagException e) {
+            throw new DecryptionException("Wrong password or corrupted data.", e);
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("Decryption failed", e);
+        }
+    }
+
+
+    
+
 }
