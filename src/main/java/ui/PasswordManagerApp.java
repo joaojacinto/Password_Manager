@@ -3,8 +3,7 @@ package ui;
 import crypto.CryptoService;
 import javafx.application.Application;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 import vault.Vault;
 import vault.VaultStorage;
@@ -16,27 +15,43 @@ public class PasswordManagerApp extends Application {
 
     private static final Path VAULT_FILE =
             Path.of(System.getProperty("user.home"), "PasswordManager", "vault.dat");
+    private static final boolean LOCK_ON_MINIMIZE = true;
 
     private final VaultStorage storage = new VaultStorage(new CryptoService());
     private Scene scene;
+    private MainView currentMain;
 
     @Override
     public void start(Stage stage) {
-        scene = new Scene(new UnlockView(storage, VAULT_FILE, this::showMainScreen), 900, 560);
+        scene = new Scene(new Region(), 900, 560);
+        showUnlockScreen();
+
+        stage.iconifiedProperty().addListener((obs, wasMinimized, isMinimized) -> {
+            if (LOCK_ON_MINIMIZE && isMinimized && currentMain != null) {
+                currentMain.lock();
+            }
+        });
 
         stage.setTitle("Password Manager");
         stage.setScene(scene);
         stage.show();
     }
 
-    // placeholder: the real main screen comes in the next step
+    private void showUnlockScreen() {
+        currentMain = null;
+        scene.setRoot(new UnlockView(storage, VAULT_FILE, this::showMainScreen));
+    }
+
     private void showMainScreen(Vault vault) {
-        Label label = new Label("Vault unlocked: " + vault.getEntries().size() + " entries");
-        scene.setRoot(new StackPane(label));
+        currentMain = new MainView(vault, storage, this::showUnlockScreen);
+        scene.setRoot(currentMain);
     }
 
     @Override
     public void stop() {
-        storage.lock();   // forget the key when the window closes
+        if (currentMain != null) {
+            currentMain.close();   // clears the clipboard if it still holds a copied password
+        }
+        storage.lock();            // forget the key when the window closes
     }
 }

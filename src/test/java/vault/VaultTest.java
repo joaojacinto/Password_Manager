@@ -45,4 +45,36 @@ class VaultTest {
         assertThrows(IllegalArgumentException.class, () -> new VaultEntry("", "joao", "pw"));
         assertThrows(IllegalArgumentException.class, () -> new VaultEntry("example.com", "joao", ""));
     }
+
+    @Test
+    void replaceChangesTheEntry() {
+        Vault vault = new Vault();
+        VaultEntry old = new VaultEntry("example.com", "joao", "pw");
+        vault.add(old);
+
+        vault.replace(old, new VaultEntry("example.com", "joao", "newpw"));
+
+        assertEquals(1, vault.getEntries().size());
+        assertEquals("newpw", vault.find("example.com", "joao").get().password());
+    }
+
+    @Test
+    void replaceCannotCreateADuplicate() {
+        Vault vault = new Vault();
+        VaultEntry first = new VaultEntry("example.com", "joao", "pw");
+        VaultEntry second = new VaultEntry("example.com", "maria", "pw");
+        vault.add(first);
+        vault.add(second);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> vault.replace(second, new VaultEntry("example.com", "joao", "x")));
+    }
+
+    @Test
+    void replaceUnknownEntryFails() {
+        Vault vault = new Vault();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> vault.replace(new VaultEntry("a.com", "x", "pw"), new VaultEntry("b.com", "x", "pw")));
+    }
 }

@@ -39,4 +39,19 @@ public class Vault {
                         && e.username().equalsIgnoreCase(username))
                 .findFirst();
     }
+
+    public void replace(VaultEntry oldEntry, VaultEntry newEntry) {
+        int index = entries.indexOf(oldEntry);
+        if (index < 0) {
+            throw new IllegalArgumentException("Entry not found.");
+        }
+
+        boolean sameKey = oldEntry.site().equalsIgnoreCase(newEntry.site())
+                && oldEntry.username().equalsIgnoreCase(newEntry.username());
+        if (!sameKey && find(newEntry.site(), newEntry.username()).isPresent()) {
+            throw new IllegalArgumentException("An entry for this site and username already exists.");
+        }
+
+        entries.set(index, newEntry);
+    }
 }
