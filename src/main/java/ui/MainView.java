@@ -183,25 +183,29 @@ public class MainView extends BorderPane {
 
         Button copyUsername = new Button("Copy");
         copyUsername.setOnAction(e -> copy(selected.username(), copyUsername, false));
+        copyUsername.setMinWidth(60);
 
         toggleButton.setOnAction(e -> {
             revealed = !revealed;
             refreshPassword();
         });
+        toggleButton.setMinWidth(60);
 
         Button copyPassword = new Button("Copy");
         copyPassword.setOnAction(e -> copy(selected.password(), copyPassword, true));
 
         Button editButton = new Button("Edit");
         editButton.setOnAction(e -> editSelected());
+        editButton.setMinWidth(60);
 
         Button deleteButton = new Button("Delete");
         deleteButton.setOnAction(e -> deleteSelected());
+        deleteButton.setMinWidth(60);
 
         detailBox.getChildren().addAll(
                 siteLabel,
                 field("Username", usernameLabel, copyUsername),
-                field("Password", passwordLabel, toggleButton, copyPassword),
+                fieldButtonsBelow("Password", passwordLabel, toggleButton, copyPassword),
                 new HBox(10, editButton, deleteButton));
         detailBox.setPadding(new Insets(24));
 
@@ -219,6 +223,16 @@ public class MainView extends BorderPane {
         row.getChildren().addAll(buttons);
 
         return new VBox(4, caption, row);
+    }
+
+    private VBox fieldButtonsBelow(String name, Label value, Button... buttons) {
+        Label caption = new Label(name);
+        caption.setStyle("-fx-text-fill: gray;");
+
+        HBox buttonRow = new HBox(10);
+        buttonRow.getChildren().addAll(buttons);
+
+        return new VBox(6, caption, value, buttonRow);
     }
 
     // ---------- showing the selected entry ----------
