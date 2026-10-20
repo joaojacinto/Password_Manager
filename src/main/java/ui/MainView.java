@@ -46,7 +46,7 @@ import java.util.Optional;
 public class MainView extends BorderPane {
 
     private static final String HIDDEN_PASSWORD = "••••••••••••";
-    private static final double IDLE_LOCK_MINUTES = 1.0;
+    private static final double IDLE_LOCK_MINUTES = 3.0;
     private static final double CLIPBOARD_CLEAR_SECONDS = 15;
 
     private static final DateTimeFormatter DATE_FORMAT =

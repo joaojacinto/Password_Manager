@@ -59,8 +59,8 @@ public class EntryDialog extends Dialog<VaultEntry> {
         ButtonType saveType = new ButtonType(editing ? "Save" : "Add", ButtonBar.ButtonData.OK_DONE);
         getDialogPane().getButtonTypes().addAll(saveType, ButtonType.CANCEL);
 
-        nameField.setPromptText("Gmail");
-        usernameField.setPromptText("Email or username");
+        nameField.setPromptText("Example: Reddit");
+        usernameField.setPromptText("Example: Email or username");
 
         websitesArea.setPromptText("One website per line");
         websitesArea.setPrefRowCount(3);
