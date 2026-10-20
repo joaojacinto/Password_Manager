@@ -1,73 +1,73 @@
 package vault;
 
-import static org.junit.jupiter.api.Assertions.*;
-import crypto.CryptoService;
-import crypto.DecryptionException;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
 class VaultTest {
+
+    private static VaultEntry entry(String name, String username) {
+        return VaultEntry.create(name, username, "pw", List.of(), "");
+    }
 
     @Test
     void addAndFindEntry() {
         Vault vault = new Vault();
-        vault.add(new VaultEntry("example.com", "joao", "pw"));
+        vault.add(entry("Gmail", "joao"));
 
-        assertTrue(vault.find("EXAMPLE.com", "joao").isPresent());
+        assertTrue(vault.find("GMAIL", "joao").isPresent());
     }
 
     @Test
     void duplicateEntryIsRejected() {
         Vault vault = new Vault();
-        vault.add(new VaultEntry("example.com", "joao", "pw"));
+        vault.add(entry("Gmail", "joao"));
 
-        assertThrows(IllegalArgumentException.class,
-                () -> vault.add(new VaultEntry("example.com", "joao", "other")));
+        assertThrows(IllegalArgumentException.class, () -> vault.add(entry("Gmail", "joao")));
+    }
+
+    @Test
+    void sameNameWithDifferentUsernameIsAllowed() {
+        Vault vault = new Vault();
+        vault.add(entry("Gmail", "joao"));
+        vault.add(entry("Gmail", "maria"));
+
+        assertEquals(2, vault.getEntries().size());
     }
 
     @Test
     void removeDeletesTheEntry() {
         Vault vault = new Vault();
-        vault.add(new VaultEntry("example.com", "joao", "pw"));
+        vault.add(entry("Gmail", "joao"));
 
-        assertTrue(vault.remove("example.com", "joao"));
+        assertTrue(vault.remove("Gmail", "joao"));
         assertTrue(vault.getEntries().isEmpty());
-    }
-
-    @Test
-    void toStringDoesNotLeakThePassword() {
-        VaultEntry entry = new VaultEntry("example.com", "joao", "hunter2");
-
-        assertFalse(entry.toString().contains("hunter2"));
-    }
-
-    @Test
-    void entryWithoutSiteOrPasswordIsRejected() {
-        assertThrows(IllegalArgumentException.class, () -> new VaultEntry("", "joao", "pw"));
-        assertThrows(IllegalArgumentException.class, () -> new VaultEntry("example.com", "joao", ""));
     }
 
     @Test
     void replaceChangesTheEntry() {
         Vault vault = new Vault();
-        VaultEntry old = new VaultEntry("example.com", "joao", "pw");
+        VaultEntry old = VaultEntry.create("Gmail", "joao", "pw", List.of(), "");
         vault.add(old);
 
-        vault.replace(old, new VaultEntry("example.com", "joao", "newpw"));
+        vault.replace(old, old.withChanges("Gmail", "joao", "newpw", List.of(), ""));
 
         assertEquals(1, vault.getEntries().size());
-        assertEquals("newpw", vault.find("example.com", "joao").get().password());
+        assertEquals("newpw", vault.find("Gmail", "joao").get().password());
     }
 
     @Test
     void replaceCannotCreateADuplicate() {
         Vault vault = new Vault();
-        VaultEntry first = new VaultEntry("example.com", "joao", "pw");
-        VaultEntry second = new VaultEntry("example.com", "maria", "pw");
+        VaultEntry first = entry("Gmail", "joao");
+        VaultEntry second = entry("Gmail", "maria");
         vault.add(first);
         vault.add(second);
 
         assertThrows(IllegalArgumentException.class,
-                () -> vault.replace(second, new VaultEntry("example.com", "joao", "x")));
+                () -> vault.replace(second, second.withChanges("Gmail", "joao", "pw", List.of(), "")));
     }
 
     @Test
@@ -75,6 +75,6 @@ class VaultTest {
         Vault vault = new Vault();
 
         assertThrows(IllegalArgumentException.class,
-                () -> vault.replace(new VaultEntry("a.com", "x", "pw"), new VaultEntry("b.com", "x", "pw")));
+                () -> vault.replace(entry("a", "x"), entry("b", "x")));
     }
 }

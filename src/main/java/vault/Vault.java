@@ -16,27 +16,24 @@ public class Vault {
         this.entries = new ArrayList<>(entries);
     }
 
-    // normal getter
     public List<VaultEntry> getEntries() {
         return List.copyOf(entries);
     }
 
     public void add(VaultEntry entry) {
-        if (find(entry.site(), entry.username()).isPresent()) {
-            throw new IllegalArgumentException("An entry for this site and username already exists.");
+        if (find(entry.name(), entry.username()).isPresent()) {
+            throw new IllegalArgumentException("An entry with this name and username already exists.");
         }
         entries.add(entry);
     }
 
-    public boolean remove(String site, String username) {
-        return entries.removeIf(e -> e.site().equalsIgnoreCase(site)
-                && e.username().equalsIgnoreCase(username));
+    public boolean remove(String name, String username) {
+        return entries.removeIf(e -> sameAccount(e, name, username));
     }
 
-    public Optional<VaultEntry> find(String site, String username) {
+    public Optional<VaultEntry> find(String name, String username) {
         return entries.stream()
-                .filter(e -> e.site().equalsIgnoreCase(site)
-                        && e.username().equalsIgnoreCase(username))
+                .filter(e -> sameAccount(e, name, username))
                 .findFirst();
     }
 
@@ -46,12 +43,16 @@ public class Vault {
             throw new IllegalArgumentException("Entry not found.");
         }
 
-        boolean sameKey = oldEntry.site().equalsIgnoreCase(newEntry.site())
-                && oldEntry.username().equalsIgnoreCase(newEntry.username());
-        if (!sameKey && find(newEntry.site(), newEntry.username()).isPresent()) {
-            throw new IllegalArgumentException("An entry for this site and username already exists.");
+        boolean sameKey = sameAccount(oldEntry, newEntry.name(), newEntry.username());
+        if (!sameKey && find(newEntry.name(), newEntry.username()).isPresent()) {
+            throw new IllegalArgumentException("An entry with this name and username already exists.");
         }
 
         entries.set(index, newEntry);
+    }
+
+    private static boolean sameAccount(VaultEntry entry, String name, String username) {
+        return entry.name().equalsIgnoreCase(name)
+                && entry.username().equalsIgnoreCase(username);
     }
 }

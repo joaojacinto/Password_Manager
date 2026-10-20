@@ -1,6 +1,7 @@
 package ui;
 
 import javafx.animation.PauseTransition;
+import javafx.application.HostServices;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -8,13 +9,16 @@ import javafx.collections.transformation.SortedList;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
@@ -30,29 +34,53 @@ import vault.VaultEntry;
 import vault.VaultStorage;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 public class MainView extends BorderPane {
 
     private static final String HIDDEN_PASSWORD = "••••••••••••";
     private static final double IDLE_LOCK_MINUTES = 1.0;
-    private static final double CLIPBOARD_CLEAR_SECONDS = 10;
+    private static final double CLIPBOARD_CLEAR_SECONDS = 15;
+
+    private static final DateTimeFormatter DATE_FORMAT =
+            DateTimeFormatter.ofPattern("d MMM yyyy 'at' HH:mm", Locale.ENGLISH)
+                    .withZone(ZoneId.systemDefault());
+
+    private static final String CARD_STYLE =
+            "-fx-background-color: white; -fx-background-radius: 12; "
+                    + "-fx-border-color: #dddddd; -fx-border-radius: 12; -fx-padding: 12 16 12 16;";
+    private static final String CAPTION_STYLE = "-fx-text-fill: gray; -fx-font-size: 12px;";
 
     private final Vault vault;
     private final VaultStorage storage;
+    private final HostServices hostServices;
     private final Runnable onLock;
 
     private final ObservableList<VaultEntry> all;
     private final FilteredList<VaultEntry> filtered;
     private final ListView<VaultEntry> listView = new ListView<>();
 
+    // detail view
     private final Label placeholder = new Label("Select an entry");
-    private final VBox detailBox = new VBox(16);
-    private final Label siteLabel = new Label();
+    private final BorderPane detailPane = new BorderPane();
+    private final Label nameLabel = new Label();
     private final Label usernameLabel = new Label();
     private final Label passwordLabel = new Label();
     private final Button toggleButton = new Button("Show");
+    private final VBox websitesBox = new VBox(4);
+    private final Label notesLabel = new Label();
+    private final Label modifiedLabel = new Label();
+    private final Label createdLabel = new Label();
+    private VBox usernameCard;
+    private VBox websitesCard;
+    private VBox notesCard;
 
     // session safety (declaration order matters: activityFilter uses the two fields above it)
     private boolean closed;
@@ -69,15 +97,16 @@ public class MainView extends BorderPane {
     private VaultEntry selected;
     private boolean revealed;
 
-    public MainView(Vault vault, VaultStorage storage, Runnable onLock) {
+    public MainView(Vault vault, VaultStorage storage, HostServices hostServices, Runnable onLock) {
         this.vault = vault;
         this.storage = storage;
+        this.hostServices = hostServices;
         this.onLock = onLock;
 
         this.all = FXCollections.observableArrayList(vault.getEntries());
         this.filtered = new FilteredList<>(all, e -> true);
         SortedList<VaultEntry> sorted =
-                new SortedList<>(filtered, Comparator.comparing(VaultEntry::site, String.CASE_INSENSITIVE_ORDER));
+                new SortedList<>(filtered, Comparator.comparing(VaultEntry::name, String.CASE_INSENSITIVE_ORDER));
         listView.setItems(sorted);
 
         setTop(buildTopBar());
@@ -165,11 +194,11 @@ public class MainView extends BorderPane {
                     setGraphic(null);
                     return;
                 }
-                Label site = new Label(entry.site());
-                site.setStyle("-fx-font-weight: bold;");
+                Label name = new Label(entry.name());
+                name.setStyle("-fx-font-weight: bold;");
                 Label user = new Label(entry.username().isEmpty() ? "(no username)" : entry.username());
                 user.setStyle("-fx-text-fill: gray;");
-                setGraphic(new VBox(2, site, user));
+                setGraphic(new VBox(2, name, user));
             }
         });
         listView.getSelectionModel().selectedItemProperty()
@@ -178,61 +207,92 @@ public class MainView extends BorderPane {
     }
 
     private StackPane buildDetails() {
-        siteLabel.setStyle("-fx-font-size: 22px; -fx-font-weight: bold;");
-        passwordLabel.setStyle("-fx-font-family: monospace; -fx-font-size: 16px;");
+        nameLabel.setStyle("-fx-font-size: 22px; -fx-font-weight: bold;");
+        nameLabel.setWrapText(true);
+        passwordLabel.setStyle("-fx-font-family: monospace; -fx-font-size: 15px;");
+        passwordLabel.setWrapText(true);   // a long revealed password wraps instead of being cut off
+        usernameLabel.setWrapText(true);
+        notesLabel.setWrapText(true);
 
         Button copyUsername = new Button("Copy");
-        copyUsername.setOnAction(e -> copy(selected.username(), copyUsername, false));
         copyUsername.setMinWidth(60);
+        copyUsername.setOnAction(e -> copy(selected.username(), copyUsername, false));
 
+        toggleButton.setMinWidth(60);
         toggleButton.setOnAction(e -> {
             revealed = !revealed;
             refreshPassword();
         });
-        toggleButton.setMinWidth(60);
 
         Button copyPassword = new Button("Copy");
+        copyPassword.setMinWidth(60);
         copyPassword.setOnAction(e -> copy(selected.password(), copyPassword, true));
 
+        usernameCard = card("Email / username", row(usernameLabel, copyUsername));
+        VBox passwordCard = card("Password", row(passwordLabel, toggleButton, copyPassword));
+        websitesCard = card("Websites", websitesBox);
+        notesCard = card("Notes", notesLabel);
+
+        VBox datesCard = new VBox(10,
+                captioned("Last modified", modifiedLabel),
+                captioned("Created", createdLabel));
+        datesCard.setStyle(CARD_STYLE);
+
+        VBox content = new VBox(12, nameLabel, usernameCard, passwordCard, websitesCard, notesCard, datesCard);
+        content.setPadding(new Insets(24, 24, 12, 24));
+
+        ScrollPane scroll = new ScrollPane(content);
+        scroll.setFitToWidth(true);
+        scroll.setStyle("-fx-background-color: transparent;");
+
         Button editButton = new Button("Edit");
+        editButton.setMinWidth(70);
         editButton.setOnAction(e -> editSelected());
-        editButton.setMinWidth(60);
 
         Button deleteButton = new Button("Delete");
+        deleteButton.setMinWidth(70);
         deleteButton.setOnAction(e -> deleteSelected());
-        deleteButton.setMinWidth(60);
 
-        detailBox.getChildren().addAll(
-                siteLabel,
-                field("Username", usernameLabel, copyUsername),
-                fieldButtonsBelow("Password", passwordLabel, toggleButton, copyPassword),
-                new HBox(10, editButton, deleteButton));
-        detailBox.setPadding(new Insets(24));
+        HBox actions = new HBox(10, editButton, deleteButton);
+        actions.setAlignment(Pos.CENTER_RIGHT);
+        actions.setPadding(new Insets(12, 24, 16, 24));
 
-        StackPane pane = new StackPane(placeholder, detailBox);
-        StackPane.setAlignment(detailBox, Pos.TOP_LEFT);
-        return pane;
+        detailPane.setCenter(scroll);
+        detailPane.setBottom(actions);
+
+        return new StackPane(placeholder, detailPane);
     }
 
-    private VBox field(String name, Label value, Button... buttons) {
-        Label caption = new Label(name);
-        caption.setStyle("-fx-text-fill: gray;");
+    private VBox card(String caption, Node content) {
+        VBox card = new VBox(4, captionLabel(caption), content);
+        card.setStyle(CARD_STYLE);
+        return card;
+    }
 
-        HBox row = new HBox(10, value);
+    private VBox captioned(String caption, Node value) {
+        return new VBox(2, captionLabel(caption), value);
+    }
+
+    private Label captionLabel(String text) {
+        Label label = new Label(text);
+        label.setStyle(CAPTION_STYLE);
+        return label;
+    }
+
+    private HBox row(Label value, Button... buttons) {
+        value.setMinWidth(0);
+        value.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(value, Priority.ALWAYS);
+
+        HBox row = new HBox(8, value);
         row.setAlignment(Pos.CENTER_LEFT);
         row.getChildren().addAll(buttons);
-
-        return new VBox(4, caption, row);
+        return row;
     }
 
-    private VBox fieldButtonsBelow(String name, Label value, Button... buttons) {
-        Label caption = new Label(name);
-        caption.setStyle("-fx-text-fill: gray;");
-
-        HBox buttonRow = new HBox(10);
-        buttonRow.getChildren().addAll(buttons);
-
-        return new VBox(6, caption, value, buttonRow);
+    private void setShown(Node node, boolean shown) {
+        node.setVisible(shown);
+        node.setManaged(shown);
     }
 
     // ---------- showing the selected entry ----------
@@ -243,18 +303,58 @@ public class MainView extends BorderPane {
 
         boolean hasEntry = entry != null;
         placeholder.setVisible(!hasEntry);
-        detailBox.setVisible(hasEntry);
-
-        if (hasEntry) {
-            siteLabel.setText(entry.site());
-            usernameLabel.setText(entry.username().isEmpty() ? "(none)" : entry.username());
-            refreshPassword();
+        detailPane.setVisible(hasEntry);
+        if (!hasEntry) {
+            return;
         }
+
+        nameLabel.setText(entry.name());
+
+        usernameLabel.setText(entry.username());
+        setShown(usernameCard, !entry.username().isEmpty());
+
+        refreshPassword();
+        showWebsites(entry.websites());
+
+        notesLabel.setText(entry.notes());
+        setShown(notesCard, !entry.notes().isBlank());
+
+        modifiedLabel.setText(DATE_FORMAT.format(entry.modifiedAt()));
+        createdLabel.setText(DATE_FORMAT.format(entry.createdAt()));
     }
 
     private void refreshPassword() {
         passwordLabel.setText(revealed ? selected.password() : HIDDEN_PASSWORD);
         toggleButton.setText(revealed ? "Hide" : "Show");
+    }
+
+    private void showWebsites(List<String> websites) {
+        websitesBox.getChildren().clear();
+        for (String site : websites) {
+            URI uri = toWebUri(site);
+            if (uri == null) {
+                websitesBox.getChildren().add(new Label(site));   // not a web address: plain text
+            } else {
+                Hyperlink link = new Hyperlink(site);
+                link.setPadding(Insets.EMPTY);
+                link.setOnAction(e -> hostServices.showDocument(uri.toString()));
+                websitesBox.getChildren().add(link);
+            }
+        }
+        setShown(websitesCard, !websites.isEmpty());
+    }
+
+    // only http and https addresses become clickable; "pronto.me" is opened as "https://pronto.me"
+    private static URI toWebUri(String text) {
+        String candidate = text.contains("://") ? text : "https://" + text;
+        try {
+            URI uri = new URI(candidate);
+            String scheme = uri.getScheme();
+            boolean web = "http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme);
+            return web && uri.getHost() != null ? uri : null;
+        } catch (URISyntaxException e) {
+            return null;
+        }
     }
 
     // ---------- actions ----------
@@ -264,8 +364,9 @@ public class MainView extends BorderPane {
             return true;
         }
         String query = text.trim().toLowerCase();
-        return entry.site().toLowerCase().contains(query)
-                || entry.username().toLowerCase().contains(query);
+        return entry.name().toLowerCase().contains(query)
+                || entry.username().toLowerCase().contains(query)
+                || entry.websites().stream().anyMatch(w -> w.toLowerCase().contains(query));
     }
 
     private void copy(String text, Button button, boolean secret) {
@@ -290,7 +391,7 @@ public class MainView extends BorderPane {
 
     private void addEntry(VaultEntry entry) {
         try {
-            vault.add(entry);   // throws if the same site and username already exist
+            vault.add(entry);   // throws if the same name and username already exist
         } catch (IllegalArgumentException e) {
             showError(e.getMessage());
             return;
@@ -300,7 +401,7 @@ public class MainView extends BorderPane {
             all.add(entry);
             listView.getSelectionModel().select(entry);
         } catch (IOException e) {
-            vault.remove(entry.site(), entry.username());   // undo
+            vault.remove(entry.name(), entry.username());   // undo
             showError("Could not save the vault: " + e.getMessage());
         }
     }
@@ -310,7 +411,11 @@ public class MainView extends BorderPane {
         if (old == null) {
             return;
         }
-        showDialog(new EntryDialog(old)).ifPresent(updated -> updateEntry(old, updated));
+        showDialog(new EntryDialog(old)).ifPresent(updated -> {
+            if (updated != old) {   // nothing changed: no need to save
+                updateEntry(old, updated);
+            }
+        });
     }
 
     private void updateEntry(VaultEntry old, VaultEntry updated) {
@@ -336,15 +441,17 @@ public class MainView extends BorderPane {
             return;
         }
 
+        String label = entry.username().isEmpty()
+                ? entry.name()
+                : entry.name() + " (" + entry.username() + ")";
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                "Delete " + entry.site() + " (" + entry.username() + ")?",
-                ButtonType.OK, ButtonType.CANCEL);
+                "Delete " + label + "?", ButtonType.OK, ButtonType.CANCEL);
         confirm.setHeaderText(null);
         if (showDialog(confirm).orElse(ButtonType.CANCEL) != ButtonType.OK) {
             return;
         }
 
-        vault.remove(entry.site(), entry.username());
+        vault.remove(entry.name(), entry.username());
         try {
             storage.save(vault);
             all.remove(entry);

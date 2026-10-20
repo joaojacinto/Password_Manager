@@ -43,7 +43,8 @@ public class PasswordManagerApp extends Application {
     }
 
     private void showMainScreen(Vault vault) {
-        currentMain = new MainView(vault, storage, this::showUnlockScreen);
+        //currentMain = new MainView(vault, storage, this::showUnlockScreen);
+        currentMain = new MainView(vault, storage, getHostServices(), this::showUnlockScreen);
         scene.setRoot(currentMain);
     }
 
