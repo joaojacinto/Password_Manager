@@ -25,12 +25,12 @@ public class PasswordManagerApp extends Application {
     public void start(Stage stage) {
         scene = new Scene(new Region(), 1300, 900);
 
-        /*stage.setMinWidth(700);      // the window can't be shrunk below this
-        stage.setMinHeight(450);
+        stage.setMinWidth(500);      // the window can't be shrunk below this
+        stage.setMinHeight(400);
 
-        stage.setMaximized(true);    // start maximized, instead of using the scene size
+        //stage.setMaximized(true);    // start maximized, instead of using the scene size
         stage.centerOnScreen();      // open in the middle of the screen
-        stage.setResizable(false);  // fixed size, no resizing or maximize button*/
+        //stage.setResizable(false);  // fixed size, no resizing or maximize button
 
         scene.getStylesheets().add(getClass().getResource("/ui/style.css").toExternalForm());
         showUnlockScreen();

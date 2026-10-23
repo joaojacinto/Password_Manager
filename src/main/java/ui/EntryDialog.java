@@ -1,7 +1,6 @@
 package ui;
 
 import generator.PasswordGenerator;
-import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
@@ -24,6 +23,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.control.ScrollPane;
 import vault.VaultEntry;
 
 import java.util.List;
@@ -33,6 +33,8 @@ public class EntryDialog extends Dialog<VaultEntry> {
     private static final int MIN_LENGTH = 16;
     private static final int MAX_LENGTH = 128;
     private static final int DEFAULT_LENGTH = 20;
+    private static final double DIALOG_WIDTH = 1100;
+    private static final double DIALOG_HEIGHT = 600;
 
     private final PasswordGenerator generator = new PasswordGenerator();
     private final VaultEntry existing;
@@ -94,8 +96,8 @@ public class EntryDialog extends Dialog<VaultEntry> {
         TitledPane generatorPane = new TitledPane("Password generator", buildGeneratorBox(errorLabel));
         generatorPane.setExpanded(false);
         // the dialog doesn't resize by itself when the section opens or closes
-        generatorPane.expandedProperty().addListener((obs, wasOpen, isOpen) ->
-                Platform.runLater(() -> getDialogPane().getScene().getWindow().sizeToScene()));
+        /*generatorPane.expandedProperty().addListener((obs, wasOpen, isOpen) ->
+                Platform.runLater(() -> getDialogPane().getScene().getWindow().sizeToScene()));*/
 
         Label websitesLabel = new Label("Websites");
         GridPane.setValignment(websitesLabel, VPos.TOP);
@@ -120,7 +122,11 @@ public class EntryDialog extends Dialog<VaultEntry> {
         grid.addRow(4, websitesLabel, websitesArea);
         grid.addRow(5, notesLabel, notesArea);
         grid.add(errorLabel, 1, 6);
-        getDialogPane().setContent(grid);
+
+        ScrollPane scroll = new ScrollPane(grid);
+        scroll.setFitToWidth(true);
+        getDialogPane().setContent(scroll);
+        getDialogPane().setPrefSize(DIALOG_WIDTH, DIALOG_HEIGHT);
 
         // validate before closing: if the entry is invalid, show why and keep the dialog open
         Button saveButton = (Button) getDialogPane().lookupButton(saveType);
