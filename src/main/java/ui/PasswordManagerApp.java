@@ -25,7 +25,7 @@ public class PasswordManagerApp extends Application {
     public void start(Stage stage) {
         scene = new Scene(new Region(), 1300, 900);
 
-        stage.setMinWidth(500);      // the window can't be shrunk below this
+        stage.setMinWidth(650);      // the window can't be shrunk below this
         stage.setMinHeight(400);
 
         //stage.setMaximized(true);    // start maximized, instead of using the scene size
