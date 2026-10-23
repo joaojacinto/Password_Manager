@@ -1,0 +1,99 @@
+/* ===== Palette: change these and the whole app follows ===== */
+.root {
+    -app-primary: #6d4aff;
+    -app-primary-dark: #5a3de0;
+    -app-soft: #ece8ff;
+    -app-bg: #f6f5fb;
+    -app-card: #ffffff;
+    -app-text: #1f1d2b;
+    -app-muted: #6b6880;
+    -app-border: #e3e0f0;
+    -app-error: #c0392b;
+
+    /* tell JavaFX's built-in theme about the palette */
+    -fx-base: #ece9f7;
+    -fx-background: -app-bg;
+    -fx-control-inner-background: -app-card;
+    -fx-accent: -app-primary;
+    -fx-focus-color: -app-primary;
+    -fx-faint-focus-color: rgba(109, 74, 255, 0.2);
+    -fx-text-background-color: -app-text;
+
+    -fx-background-color: -app-bg;
+    -fx-font-size: 14px;
+}
+
+/* ===== Text ===== */
+.label { -fx-text-fill: -app-text; }
+.title { -fx-font-size: 22px; -fx-font-weight: bold; }
+.caption { -fx-text-fill: -app-muted; -fx-font-size: 12px; }
+.muted { -fx-text-fill: -app-muted; }
+.error { -fx-text-fill: -app-error; }
+.mono { -fx-font-family: monospace; -fx-font-size: 15px; }
+.entry-name { -fx-font-weight: bold; }
+
+/* ===== Cards in the detail view ===== */
+.card {
+    -fx-background-color: -app-card;
+    -fx-background-radius: 12;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 12;
+    -fx-padding: 12 16 12 16;
+}
+
+.scroll-pane { -fx-background-color: transparent; }
+.scroll-pane > .viewport { -fx-background-color: transparent; }
+
+/* ===== The entry list ===== */
+.list-view {
+    -fx-background-color: -app-card;
+    -fx-border-color: -app-border;
+}
+.list-cell, .list-cell:odd, .list-cell:even {
+    -fx-background-color: transparent;
+    -fx-padding: 8 12 8 12;
+}
+.list-cell:filled:hover { -fx-background-color: -app-soft; }
+.list-cell:filled:selected, .list-cell:filled:selected:hover { -fx-background-color: -app-primary; }
+.list-cell:filled:selected .label { -fx-text-fill: white; }
+.list-cell:filled:selected .muted { -fx-text-fill: #e6e1ff; }
+
+/* ===== Buttons ===== */
+.button {
+    -fx-background-color: -app-card;
+    -fx-background-insets: 0;
+    -fx-background-radius: 8;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 8;
+    -fx-text-fill: -app-text;
+    -fx-padding: 6 14 6 14;
+    -fx-cursor: hand;
+}
+.button:hover { -fx-background-color: -app-soft; }
+.button:pressed { -fx-background-color: derive(-app-soft, -6%); }
+.button:focused { -fx-border-color: -app-primary; }
+.button:disabled { -fx-opacity: 0.5; }
+
+.button:default, .button.primary {
+    -fx-background-color: -app-primary;
+    -fx-text-fill: white;
+    -fx-border-color: transparent;
+}
+.button:default:hover, .button.primary:hover { -fx-background-color: -app-primary-dark; }
+.button.danger { -fx-text-fill: -app-error; }
+
+/* ===== Text fields ===== */
+.text-field, .password-field {
+    -fx-background-color: -app-card;
+    -fx-background-insets: 0;
+    -fx-background-radius: 8;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 8;
+    -fx-padding: 7 10 7 10;
+}
+.text-field:focused, .password-field:focused { -fx-border-color: -app-primary; }
+
+/* ===== Misc ===== */
+.dialog-pane { -fx-background-color: -app-bg; }
+.progress-indicator { -fx-progress-color: -app-primary; }
+.hyperlink { -fx-text-fill: -app-primary; }

@@ -53,10 +53,6 @@ public class MainView extends BorderPane {
             DateTimeFormatter.ofPattern("d MMM yyyy 'at' HH:mm", Locale.ENGLISH)
                     .withZone(ZoneId.systemDefault());
 
-    private static final String CARD_STYLE =
-            "-fx-background-color: white; -fx-background-radius: 12; "
-                    + "-fx-border-color: #dddddd; -fx-border-radius: 12; -fx-padding: 12 16 12 16;";
-    private static final String CAPTION_STYLE = "-fx-text-fill: gray; -fx-font-size: 12px;";
 
     private final Vault vault;
     private final VaultStorage storage;
@@ -172,6 +168,7 @@ public class MainView extends BorderPane {
         HBox.setHgrow(search, Priority.ALWAYS);
 
         Button addButton = new Button("+ Add");
+        addButton.getStyleClass().add("primary");
         addButton.setOnAction(e -> openAddDialog());
 
         Button lockButton = new Button("Lock");
@@ -195,9 +192,9 @@ public class MainView extends BorderPane {
                     return;
                 }
                 Label name = new Label(entry.name());
-                name.setStyle("-fx-font-weight: bold;");
+                name.getStyleClass().add("entry-name");
                 Label user = new Label(entry.username().isEmpty() ? "(no username)" : entry.username());
-                user.setStyle("-fx-text-fill: gray;");
+                user.getStyleClass().add("muted");
                 setGraphic(new VBox(2, name, user));
             }
         });
@@ -207,11 +204,10 @@ public class MainView extends BorderPane {
     }
 
     private StackPane buildDetails() {
-        nameLabel.setStyle("-fx-font-size: 22px; -fx-font-weight: bold;");
+        nameLabel.getStyleClass().add("title");
         nameLabel.setWrapText(true);
-        passwordLabel.setStyle("-fx-font-family: monospace; -fx-font-size: 15px;");
-        passwordLabel.setWrapText(true);   // a long revealed password wraps instead of being cut off
-        usernameLabel.setWrapText(true);
+        passwordLabel.getStyleClass().add("mono");
+        passwordLabel.setWrapText(true);
         notesLabel.setWrapText(true);
 
         Button copyUsername = new Button("Copy");
@@ -236,7 +232,7 @@ public class MainView extends BorderPane {
         VBox datesCard = new VBox(10,
                 captioned("Last modified", modifiedLabel),
                 captioned("Created", createdLabel));
-        datesCard.setStyle(CARD_STYLE);
+        datesCard.getStyleClass().add("card");
 
         VBox content = new VBox(12, nameLabel, usernameCard, passwordCard, websitesCard, notesCard, datesCard);
         content.setPadding(new Insets(24, 24, 12, 24));
@@ -250,6 +246,7 @@ public class MainView extends BorderPane {
         editButton.setOnAction(e -> editSelected());
 
         Button deleteButton = new Button("Delete");
+        deleteButton.getStyleClass().add("danger");
         deleteButton.setMinWidth(70);
         deleteButton.setOnAction(e -> deleteSelected());
 
@@ -265,18 +262,18 @@ public class MainView extends BorderPane {
 
     private VBox card(String caption, Node content) {
         VBox card = new VBox(4, captionLabel(caption), content);
-        card.setStyle(CARD_STYLE);
+        card.getStyleClass().add("card");
         return card;
-    }
-
-    private VBox captioned(String caption, Node value) {
-        return new VBox(2, captionLabel(caption), value);
     }
 
     private Label captionLabel(String text) {
         Label label = new Label(text);
-        label.setStyle(CAPTION_STYLE);
+        label.getStyleClass().add("caption");
         return label;
+    }
+
+    private VBox captioned(String caption, Node value) {
+        return new VBox(2, captionLabel(caption), value);
     }
 
     private HBox row(Label value, Button... buttons) {
@@ -471,6 +468,7 @@ public class MainView extends BorderPane {
     private <T> Optional<T> showDialog(Dialog<T> dialog) {
         if (getScene() != null) {
             dialog.initOwner(getScene().getWindow());
+            dialog.getDialogPane().getStylesheets().addAll(getScene().getStylesheets());
         }
         dialog.getDialogPane().addEventFilter(InputEvent.ANY, activityFilter);
         activeDialog = dialog;

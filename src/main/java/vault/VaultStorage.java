@@ -52,10 +52,12 @@ public class VaultStorage {
 
     public Vault unlock(Path path, char[] masterPassword) throws IOException {
         byte[] file = Files.readAllBytes(path);
-        byte version = file[0];
+
         if (file.length <= HEADER_LENGTH) {
             throw new IOException("Not a valid vault file.");
         }
+
+        byte version = file[0];
         if (version != FORMAT_VERSION && version != LEGACY_FORMAT_VERSION) {
             throw new IOException("Unsupported vault version: " + version);
         }

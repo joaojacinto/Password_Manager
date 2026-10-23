@@ -88,7 +88,7 @@ public class EntryDialog extends Dialog<VaultEntry> {
         }
 
         Label errorLabel = new Label();
-        errorLabel.setStyle("-fx-text-fill: #c0392b;");
+        errorLabel.getStyleClass().add("error");         // replaces errorLabel.setStyle(...)
         errorLabel.setWrapText(true);
 
         TitledPane generatorPane = new TitledPane("Password generator", buildGeneratorBox(errorLabel));
@@ -105,7 +105,8 @@ public class EntryDialog extends Dialog<VaultEntry> {
         ColumnConstraints labelColumn = new ColumnConstraints();
         ColumnConstraints fieldColumn = new ColumnConstraints();
         fieldColumn.setHgrow(Priority.ALWAYS);
-        fieldColumn.setPrefWidth(400);
+        fieldColumn.setPrefWidth(900);
+
 
         GridPane grid = new GridPane();
         grid.setHgap(10);
@@ -159,6 +160,7 @@ public class EntryDialog extends Dialog<VaultEntry> {
         symbols.setSelected(true);
 
         Button generateButton = new Button("Generate");
+        generateButton.getStyleClass().add("primary");
         generateButton.setOnAction(e -> {
             errorLabel.setText("");
             try {

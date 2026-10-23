@@ -49,9 +49,13 @@ public class UnlockView extends VBox {
         setPadding(new Insets(40));
 
         Label title = new Label("Password Manager");
-        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        title.getStyleClass().add("title");
 
         Label subtitle = new Label(creating ? "Create your vault" : "Unlock your vault");
+        subtitle.getStyleClass().add("muted");
+
+        actionButton.getStyleClass().add("primary");
+        messageLabel.getStyleClass().add("error");
 
         passwordField.setPromptText("Master password");
         passwordField.setMaxWidth(FIELD_WIDTH);
@@ -78,7 +82,7 @@ public class UnlockView extends VBox {
         spinner.setPrefSize(24, 24);
         spinner.setVisible(false);
 
-        messageLabel.setStyle("-fx-text-fill: #c0392b;");
+        //messageLabel.setStyle("-fx-text-fill: #c0392b;");
         messageLabel.setWrapText(true);
         messageLabel.setMaxWidth(FIELD_WIDTH);
 
